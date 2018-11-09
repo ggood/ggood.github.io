@@ -24,15 +24,20 @@ function mkStation(outputNode) {
   return station;
 }
 
-function replaceStation(index, active, audioSink) {
+function replaceStation(index, active, historical, audioSink) {
+  if (index == -1) {
+    return;
+  }
   active[index].stop();
   var station = mkStation(audioSink);
   active[index] = station;
   station.sendRepeated(station.getCallsign(), 2000);
+  historical.push(station);
 }
 
 function checkCallsign(callSign, radio) {
   active = (radio == 0) ? document.leftStations : document.rightStations;
+  historical = (radio == 0) ? document.leftStationsHistorical : document.rightStationsHistorical;
   var audioSink = (radio == 0) ? leftGain : rightGain;
   var correct = false;
   for (si = 0; si < active.length; si++) {
@@ -48,12 +53,28 @@ function checkCallsign(callSign, radio) {
       break;
     }
   }
-  console.log("Incorrect: " + callSign);
+  if (!correct) {
+    // Check history
+    for (si = 0; si < historical.length; si++) {
+      if (historical[si].getCallsign() == callSign) {
+        correct = true;
+        si = -1;  // Magic value to indicate copy from history
+        console.log("Correct: " + callSign);
+        if (document.lastRadioLogged != -1 && radio != document.lastRadioLogged) {
+          document.score += 5;
+        } else {
+          document.score++;
+        }
+        document.lastRadioLogged = radio;
+        break;
+      }
+    }
+  }
   // If the call was correct, then make a new one. If it was wrong,
   // but we're only doing one station in each ear, then create a
   // new one.
   if (correct) {
-    replaceStation(si, active, audioSink);
+    replaceStation(si, active, historical, audioSink);
   }
   return correct;
 }
@@ -108,13 +129,19 @@ $(function() {
     rightGain.connect(so2rcontroller.getRadio2Input());
 
     document.leftStations = []
+    document.leftStationsHistorical = []
     document.leftGain = leftGain;
     document.rightStations = []
+    document.rightStationsHistorical = []
     document.rightGain = rightGain;
     document.score = 0;
     for (i = 0; i < MAX_STATIONS; i++) {
-      document.leftStations.push(mkStation(leftGain));
-      document.rightStations.push(mkStation(rightGain));
+      ls = mkStation(leftGain);
+      document.leftStations.push(ls);
+      document.leftStationsHistorical.push(ls);
+      rs = mkStation(rightGain);
+      document.rightStations.push(rs);
+      document.rightStationsHistorical.push(rs);
     }
 
     so2rcontroller.selectBothRadios();
@@ -135,12 +162,12 @@ $(function() {
         var station = document.leftStations[i];
         if (station.msgCounter < 1) {
           console.log("Station " + station.getCallsign() + " is lonely, spawining new station");
-          replaceStation(i, document.leftStations, leftGain);
+          replaceStation(i, document.leftStations, document.leftStationsHistorical, leftGain);
         }
         station = document.rightStations[i];
         if (station.msgCounter < 1) {
           console.log("Station " + station.getCallsign() + " is lonely, spawning new station");
-          replaceStation(i, document.rightStations, rightGain);
+          replaceStation(i, document.rightStations, document.rightStationsHistorical, rightGain);
         }
       }
     }, 500);
@@ -225,6 +252,7 @@ $(function() {
       document.leftStations[i].stop();
       var newStation = mkStation(leftGain);
       document.leftStations[i] = newStation;
+      document.leftStationsHistorical.push(newStation);
       setTimeout(function() {newStation.sendRepeated(newStation.getCallsign(), 2000)}, 2000);
     }
   });
@@ -236,6 +264,7 @@ $(function() {
       document.rightStations[i].stop();
       var newStation = mkStation(rightGain);
       document.rightStations[i] = newStation;
+      document.rightStationsHistorical.push(newStation);
       setTimeout(function() {newStation.sendRepeated(newStation.getCallsign(), 2000)}, 2000);
     }
   });
