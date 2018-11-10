@@ -35,6 +35,16 @@ function replaceStation(index, active, historical, audioSink) {
   historical.push(station);
 }
 
+function alreadyScored(callSign) {
+  for (si = 0; si < document.scoredStations.length; si++) {
+    if (document.scoredStations[si].getCallsign() == callSign) {
+      console.log(callSign + " was already scored");
+      return true;
+    }
+  }
+  return false;
+}
+
 function checkCallsign(callSign, radio) {
   active = (radio == 0) ? document.leftStations : document.rightStations;
   historical = (radio == 0) ? document.leftStationsHistorical : document.rightStationsHistorical;
@@ -50,13 +60,14 @@ function checkCallsign(callSign, radio) {
         document.score++;
       }
       document.lastRadioLogged = radio;
+      document.scoredStations.push(active[si]);
       break;
     }
   }
   if (!correct) {
     // Check history
     for (si = 0; si < historical.length; si++) {
-      if (historical[si].getCallsign() == callSign) {
+      if (historical[si].getCallsign() == callSign && !alreadyScored(callSign)) {
         correct = true;
         si = -1;  // Magic value to indicate copy from history
         console.log("Correct: " + callSign);
@@ -90,7 +101,7 @@ function animateScore(oldScore, newScore) {
     console.log("correct");
     $("#score").removeClass("wrong");
     $("#score").addClass("correct");
-    $("#score").aremoveClass("bonus");
+    $("#score").removeClass("bonus");
   } else {
     console.log("wrong");
     $("#score").addClass("wrong");
@@ -134,6 +145,7 @@ $(function() {
     document.rightStations = []
     document.rightStationsHistorical = []
     document.rightGain = rightGain;
+    document.scoredStations = []
     document.score = 0;
     for (i = 0; i < MAX_STATIONS; i++) {
       ls = mkStation(leftGain);
