@@ -29,8 +29,17 @@
   border-color: #999;
   border-style: solid;
   overflow: hidden;
-  height: 50px;
+  height: 100px;
   width: 300px;
+}
+
+.score_field {
+  border-width: 0px;
+  padding: 2px;
+  border-color: #999;
+  border-style: solid;
+  overflow: hidden;
+  width: 50px;
 }
 
 .log_panel {
@@ -44,7 +53,7 @@
 }
 
 .log {
-  height: 500px;
+  height: 480px;
   padding: 2px;
   border-width: 1px;
   border-color: black;

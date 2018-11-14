@@ -2,7 +2,7 @@
 // (Single Operator 2 Radio) contesting.
 //
 
-MAX_STATIONS = 1
+MAX_STATIONS = 1 
 
 $( document ).ready(function() {
   console.log("READY");
@@ -59,6 +59,7 @@ function checkCallsign(callSign, radio) {
       } else {
         document.score++;
       }
+      document.correct += 1;
       document.lastRadioLogged = radio;
       document.scoredStations.push(active[si]);
       break;
@@ -71,6 +72,7 @@ function checkCallsign(callSign, radio) {
         correct = true;
         si = -1;  // Magic value to indicate copy from history
         console.log("Correct: " + callSign);
+        document.correct += 1;
         if (document.lastRadioLogged != -1 && radio != document.lastRadioLogged) {
           document.score += 5;
         } else {
@@ -80,6 +82,7 @@ function checkCallsign(callSign, radio) {
         break;
       }
     }
+    document.incorrect += 1;
   }
   // If the call was correct, then make a new one. If it was wrong,
   // but we're only doing one station in each ear, then create a
@@ -147,6 +150,13 @@ $(function() {
     document.rightGain = rightGain;
     document.scoredStations = []
     document.score = 0;
+    document.correct = 0;
+    document.incorrect = 0;
+    document.start_time = new Date();
+    $("#elapsed_time").val("0:00");
+    $("#rate").val("");
+    $("#correct").val("");
+    $("#incorrect").val("");
     for (i = 0; i < MAX_STATIONS; i++) {
       ls = mkStation(leftGain);
       document.leftStations.push(ls);
@@ -184,6 +194,16 @@ $(function() {
       }
     }, 500);
 
+    timeUpdateId = setInterval(function(){
+      et = Math.round((new Date() - document.start_time) / 1000);
+      document.elapsed_time = et;
+      minutes = Math.floor(et / 60);
+      seconds = Math.floor(et % 60);
+      if (seconds < 10) {
+          seconds = "0" + seconds;
+      }
+    }, 1000);
+
   });
 
 
@@ -196,6 +216,7 @@ $(function() {
       document.rightStations[i].stop();
       document.rightStations[i].keyer.stop();
       clearTimeout(reaperId);
+      clearTimeout(timeUpdateId);
     }
   });
 
@@ -228,8 +249,14 @@ $(function() {
       $("#callsign_left").val("");
       var oldScore = document.score;
       var correct = checkCallsign(callsign, 0);
-      // Update score
+      // Update score, correct, incorrect
       $("#score").val(document.score);
+      $("#correct").val(document.correct);
+      $("#incorrect").val(document.incorrect);
+      $("#elapsed_time").val(minutes + ":" + seconds);
+      rateFactor = 3600 / document.elapsed_time;
+      rate = Math.round(rateFactor * document.score);
+      $("#rate").val(rate);
       var icon = correct ? "<br>&#9989;" : "<br>&#10060;";
       $('#log_left').append(icon + callsign );
       // Keep scrolled to bottom
@@ -248,6 +275,11 @@ $(function() {
       var correct = checkCallsign(callsign, 1);
       // Update score
       $("#score").val(document.score);
+      $("#correct").val(document.correct);
+      $("#incorrect").val(document.incorrect);
+      rateFactor = 3600 / document.elapsed_time;
+      rate = Math.round(rateFactor * document.score);
+      $("#rate").val(rate);
       var icon = correct ? "<br>&#9989;" : "<br>&#10060;";
       $('#log_right').append(icon + callsign );
       // Keep scrolled to bottom
